@@ -9,9 +9,6 @@ metadata description = 'Creates the network resouces for the explorer project'
 param env string
 
 @description('Project location')
-@allowed([
-	'westeurope'
-])
 param location string
 
 @description('Project subnet count of each type (1 means 2 subnets: 1 public and 1 private)')
@@ -20,44 +17,55 @@ param location string
 param subnetCount int = 1
 
 var locationLabel = take(location, 6)
+var vnetCIDR = '10.0.0.0/16'
+var vnetName = 'vnet-explorer-${env}-${locationLabel}-001'
+var snetNamePrefix = 'snet-explorer-${env}-${locationLabel}'
 
-resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' = {
-	name: 'vnet-explorer-${env}-${locationLabel}-001'
+var publicSubnets = [
+	for snet in range(0, subnetCount) : {
+		name: '${snetNamePrefix}-public-00${snet+1}'
+		properties: {
+			addressPrefix: cidrSubnet(vnetCIDR, 24, snet) 
+			networkSecurityGroup: {
+				id: publicNSG.id
+			}
+		}
+	}
+]
+
+var privateSubnets = [
+	for snet in range(0, subnetCount): {
+		name: '${snetNamePrefix}-private-00${snet+1}'
+		properties: {
+			addressPrefix: cidrSubnet(vnetCIDR, 24, snet+subnetCount)
+			networkSecurityGroup: {
+				id: privateNSG.id
+			}
+		}
+	}
+]
+
+var bastionSubnet = {
+	name: 'AzureBastionSubnet'
+	properties: {
+		addressPrefix: cidrSubnet(vnetCIDR, 24, 2*subnetCount+1)
+		privateEndpointNetworkPolicies: 'Disabled'
+		privateLinkServiceNetworkPolicies: 'Disabled'
+	}
+}
+
+resource vnet 'Microsoft.Network/virtualNetworks@2025-05-01' = {
+	name: vnetName
 	location: location
 	properties: {
 		addressSpace: {
 			addressPrefixes: [
-				'10.0.0.0/16'
+				vnetCIDR
 			]
 		}
+		subnets: union(publicSubnets, privateSubnets, [bastionSubnet])
 	}
 }
-
-resource publicSubnets 'Microsoft.Network/virtualNetworks/subnets@2025-05-01' = [for subnet in range(0, subnetCount) : {
-	name: 'snet-explorer-${env}-${locationLabel}-public-00${subnet+1}'
-	parent: vnet
-	properties: {
-		addressPrefix: cidrSubnet(vnet.properties.addressSpace.addressPrefixes[0], 24, subnet)
-		networkSecurityGroup: {
-			id: publicNSG.id
-		}
-	}
-}]
-
-resource privateSubnets 'Microsoft.Network/virtualNetworks/subnets@2025-05-01' = [for subnet in range(0, subnetCount) : {
-	name: 'snet-explorer-${env}-${locationLabel}-private-00${subnet+1}'
-	parent: vnet
-	properties: {
-		addressPrefix: cidrSubnet(vnet.properties.addressSpace.addressPrefixes[0], 24, subnet+2)
-		defaultOutboundAccess: false
-		networkSecurityGroup: {
-			id: privateNSG.id
-		}
-		natGateway: {
-			id: natGateway.id
-		}
-	}
-}]
 
 resource publicNSG 'Microsoft.Network/networkSecurityGroups@2025-05-01' = {
 	name: 'nsg-explorer-${env}-${locationLabel}-public-001'
@@ -101,3 +109,9 @@ resource natPublicIp 'Microsoft.Network/publicIPAddresses@2025-05-01' = {
 		tier: 'Regional'
 	}
 }
+
+output privateNSGId string = privateNSG.id
+output privateSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, '${snetNamePrefix}-private-001')
+output publicSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, '${snetNamePrefix}-public-001')
+output bastionSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'AzureBastionSubnet')
+
