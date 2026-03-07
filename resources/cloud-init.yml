@@ -5,16 +5,16 @@ packages:
 - nginx
 write_files:
 - content: |
-		<!DOCTYPE html>
-		<html lang="en">
-		<head>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<title>Azure Explorer app</title>
-		</head>
-		<body>
-			<h2>Azure Explorer app</h2>
-		</body>
-	path: /var/www/html/index.nginx-debian.html
-	owner: 'www-data:www-data'
-	permissions: '0644'
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Azure Explorer app</title>
+    </head>
+    <body>
+      <h2>Azure Explorer app</h2>
+    </body>
+  path: /var/www/html/index.nginx-debian.html
+  owner: 'www-data:www-data'
+  permissions: '0644'
