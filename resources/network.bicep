@@ -41,6 +41,10 @@ var privateSubnets = [
 			networkSecurityGroup: {
 				id: privateNSG.id
 			}
+      natGateway: {
+        id: natGateway.id
+      }
+      defaultOutboundAccess: false
 		}
 	}
 ]
@@ -79,7 +83,21 @@ resource privateNSG 'Microsoft.Network/networkSecurityGroups@2025-05-01' = {
 	name: 'nsg-explorer-${env}-${locationLabel}-private-001'
 	location: location
 	properties: {
-		securityRules: []
+		securityRules: [
+      {
+        name: 'AllowInboundHTTP'
+        properties: {
+          protocol: 'Tcp'
+          sourcePortRange: '*'
+          destinationPortRange: '80'
+          sourceAddressPrefix: 'Internet'
+          destinationAddressPrefix: '*'
+          access: 'Allow'
+          priority: 100
+          direction: 'Inbound'
+        }
+      }
+    ]
 	}
 }
 resource natGateway 'Microsoft.Network/natGateways@2025-05-01' = {
