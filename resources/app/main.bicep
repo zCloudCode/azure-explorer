@@ -16,6 +16,9 @@ param location string
 ])
 param appServicePlanSKU string
 
+@description('Code repo URL')
+param repoUrl string
+
 var servicePlanSKUs object = {
   Basic: 'B1'
   Standard: 'S1'
@@ -47,9 +50,10 @@ resource site 'Microsoft.Web/sites@2025-03-01' = {
 }
 
 resource sourceControl 'Microsoft.Web/sites/sourcecontrols@2025-03-01' = {
-  name: 'scm-explorer-${env}-${locationLabel}-001'
+  name: 'web'
   parent: site
   properties: {
+    repoUrl: repoUrl
     isGitHubAction: true
     gitHubActionConfiguration: {
       isLinux: true
