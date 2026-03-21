@@ -3,24 +3,22 @@ on: [push]
 
 jobs:
   test: 
-    permissions: write # Require write permission to fetch an OIDC token
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure CLI Login
+        uses: azure/login@v2
+        with:
+          creds: >
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}"
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}"
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+            }
 
-  runs-on: ubuntu-latest
-  steps:
-    - name: Azure CLI Login
-      uses: azure/login@v2
-      with:
-        creds: >
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}"
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}"
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          }
-
-    - name: Azure CLI script
-      uses: azure/cli@v2
-      with:
-        azcliversion: latest
-        inlineScript: |
-          az account show
+      - name: Azure CLI script
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az account show
