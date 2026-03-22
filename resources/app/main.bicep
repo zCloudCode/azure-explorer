@@ -45,6 +45,10 @@ resource site 'Microsoft.Web/sites@2025-03-01' = {
     enabled: true
     httpsOnly: true
     serverFarmId: serverFarm.id
+    siteConfig: {
+      linuxFxVersion: 'PYTHON|3.14'
+    }
+    clientAffinityEnabled: false
   }
   kind: 'app,linux'
 }
@@ -54,11 +58,13 @@ resource sourceControl 'Microsoft.Web/sites/sourcecontrols@2025-03-01' = {
   parent: site
   properties: {
     repoUrl: repoUrl
+    branch: 'main'
     isGitHubAction: true
     gitHubActionConfiguration: {
+      generateWorkflowFile: false
       isLinux: true
       codeConfiguration: {
-        runtimeStack: 'Python'
+        runtimeStack: 'PYTHON'
         runtimeVersion: '3.14'
       }
     }
