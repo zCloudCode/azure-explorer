@@ -1,22 +1,52 @@
 name: Run Azure CLI login with OpenID Connect
-on: [push]
 
-permissions:
-  id-token: write
-  contents: read
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: app-explorer-dev-westeu-001
+  AZURE_WEBAPP_NAME: 'app-explorer-dev-westeu-001'
   AZURE_WEBAPP_PACKAGE_PATH: 'resources/app/src'
-
+  PYTHON_VERSION: '3.14'
 
 jobs:
-  deploy-webapp: 
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # This is required for actions/checkout
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          cd ${{ env.AZURE_WEBAPP_PACKAGE }}
+          python -m venv antenv
+          source antenv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt 
+
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: |
+            .
+            !antenv/
+
+  deploy: 
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
+    steps:
       - name: Azure CLI Login
         uses: azure/login@v3
         with:
@@ -24,21 +54,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-      - name: Install dependencies
-        run: |
-          cd ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Deploy WebApp
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
+          slot-name: 'Production'
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-      - name: logout
-        run: |
-          az logout

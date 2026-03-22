@@ -45,28 +45,19 @@ resource site 'Microsoft.Web/sites@2025-03-01' = {
     enabled: true
     httpsOnly: true
     serverFarmId: serverFarm.id
-    siteConfig: {
-      linuxFxVersion: 'PYTHON|3.14'
-    }
     clientAffinityEnabled: false
   }
   kind: 'app,linux'
 }
 
-resource sourceControl 'Microsoft.Web/sites/sourcecontrols@2025-03-01' = {
-  name: 'web'
-  parent: site
-  properties: {
-    repoUrl: repoUrl
-    branch: 'main'
-    isGitHubAction: true
-    gitHubActionConfiguration: {
-      generateWorkflowFile: false
-      isLinux: true
-      codeConfiguration: {
-        runtimeStack: 'PYTHON'
-        runtimeVersion: '3.14'
-      }
-    }
-  }
+resource config 'Microsoft.Web/sites/config@2025-03-01' = {
+	name: 'web'
+	parent: site
+	properties: {
+		alwaysOn: false
+		numberOfWorkers: 1
+		linuxFxVersion: 'PYTHON|3.14'
+		scmType: 'GitHubAction'
+	}
 }
+
